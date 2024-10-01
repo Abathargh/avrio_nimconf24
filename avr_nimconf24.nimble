@@ -12,3 +12,4 @@ bin           = @["avr_nimconf24"]
 requires "nim >= 2.0.8"
 requires "nimib"
 requires "nimislides"
+requires "avr_io >= 0.3.0"
