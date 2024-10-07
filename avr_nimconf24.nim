@@ -104,11 +104,14 @@ slide:
       listItem: nbText: "Stricter type-system"
       listItem: nbText: "Array access checks (tunable)"
       listItem: nbText: "Hygienic macros, bit fields"
-  slide: nbText: "Still allows to use low level primitives"
+  slide: nbText: "A couple of nice nim features"
+  slide: nbText: "Allows to use low level primitives"
+  slide: nbText: "Easy to check generated C code"
+  slide: nbText: "Tunable memory management strategies"
   slide: nbText: "Killer-feature: compile-time and metaprogramming"
-  slide: nbText: "Show basic nim avr program?"
-  slide: nbText: """I talk at length about this here:
-https://dev.to/abathargh/nim-for-embedded-software-development-33cc"""
+  slide: 
+    nbText: "I talk at length about this here:"
+    nbText: "https://dev.to/abathargh/nim-for-embedded-software-development-33cc"
 
 slide:
   nbText: "## avr_io: avr support in nim 👑"
@@ -293,7 +296,7 @@ slide:
     nbCodeSkip: 
       avrman init -m:atmega328p -f:16000000   \
                   -p:"arduino -b 115200 -P:/dev/ttyACM0" uno
-    nbText: "Initialize an Arduino Uno based C project with Makefile"
+    nbText: "Initialize an Arduino Uno based C project using make"
     nbCodeSkip: avrman init -m:atmega328p -f:16000000 \
       -p:"arduino -b 115200 -P:/dev/ttyACM0" --cproject uno_c
     nbText: "Initialize an Arduino Uno based C project with CMake"
@@ -311,7 +314,7 @@ slide:
     nbText: """$f_{timer} = \frac{f_{MCU}}{prescaler factor} = \frac{16 MHz}{1024} = 15.625 KHz$"""
   slide:
     nbText: """$T_{timer} = \frac{1}{f_{timer}} = \frac{1}{15.625 KHz} = 64 μs$"""
-    nbText: """$T_{interrupt} = T_{timer} \cdot OCRA$""" 
+    nbText: """$T_{interrupt} = T_{timer} \cdot OCRA =$""" 
     nbText: """$= 64 μs \cdot 10000 = 0,64 s$"""
   slide:
     animateCode(2..3, 6..7, 8..9, 11..12):
