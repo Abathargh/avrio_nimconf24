@@ -347,8 +347,8 @@ slide:
         builtinLed = 5'u8
       
       proc initTimer1() =
-        OCR1AH[]  = (10000 shr 8).uint8
-        OCR1AL[]  = (10000 and 0xff).uint8
+        OCR1AH[] = (10000 shr 8).uint8
+        OCR1AL[] = (10000 and 0xff).uint8
         timer1.setTimerFlag({TimCtlB16Flag.cs0, cs2, wgm2})
         timer1.setTimerFlag({Timsk16Flag.ociea})
       
