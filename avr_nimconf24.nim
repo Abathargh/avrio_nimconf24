@@ -132,7 +132,7 @@ slide:
         PINB*   = MappedIoRegister[uint8](0x23)
   slide:
     nbText: "Memory-mapped register definitions"
-    animateCode(1, 2..3): 
+    animateCode(1, 3, 4): 
       import avr_io
       proc init() =
         DDRB[] = 0b01.uint8
@@ -152,7 +152,7 @@ slide:
     animateCode(3, 4, 7):
       const tim0Led = 5
 
-      proc timer1CompaIsr() {.isr(Timer0CompAVect).} =
+      proc timer0CompaIsr() {.isr(Timer0CompAVect).} =
         portB.togglePin(tim0Led)
 
       proc main =
@@ -303,6 +303,30 @@ slide:
     nbCodeSkip: avrman init -m:atmega328p -f:16000000 \
       -p:"arduino -b 115200 -P:/dev/ttyACM0" \ 
       --cproject --cmake uno_cmake
+  slide:
+    nbText: "Generated targets"
+    nbCodeSkip:
+      after build:
+        when defined(windows):
+          mvFile(bin[0] & ".exe", bin[0] & ".elf")
+        else:
+          mvFile(bin[0], bin[0] & ".elf")
+        exec("avr-objcopy -O ihex " & bin[0] & ".elf " & bin[0] & ".hex")
+        exec("avr-objcopy -O binary " & bin[0] & ".elf " & bin[0] & ".bin")
+
+      task clear, "Deletes the previously built compiler artifacts":
+        rmFile(bin[0] & ".elf")
+        rmFile(bin[0] & ".hex")
+        rmFile(bin[0] & ".bin")
+        rmDir(".nimcache")
+  slide:
+    nbText: "Additional generated targets"
+    nbCodeSkip:
+      task flash, "Loads the compiled binary onto the MCU":
+        exec("avrdude -c arduino -b 115200 -P /dev/ttyACM0 -p m328p -U flash:w:" & bin[0] & ".hex:i")
+
+      task flash_debug, "Loads the elf binary onto the MCU":
+        exec("avrdude -c arduino -b 115200 -P /dev/ttyACM0 -p m328p -U flash:w:" & bin[0] & ".elf:e")
 
 slide:
   nbText: "## example: a simple blink application"
@@ -322,13 +346,13 @@ slide:
       const 
         builtinLed = 5'u8
       
-      proc initTimer0() =
+      proc initTimer1() =
         OCR1AH[]  = (10000 shr 8).uint8
         OCR1AL[]  = (10000 and 0xff).uint8
         timer1.setTimerFlag({TimCtlB16Flag.cs0, cs2, wgm2})
         timer1.setTimerFlag({Timsk16Flag.ociea})
       
-      proc timer0_compa_isr() {.isr(Timer1CompAVect).} =
+      proc timer_compa_isr() {.isr(Timer1CompAVect).} =
         portB.togglePin(builtinLed)
 
   slide:
@@ -336,7 +360,7 @@ slide:
       proc loop = 
         # PORTB[5] is the Arduino Uno builtin led 
         portB.asOutputPin(builtinLed)
-        initTimer0()
+        initTimer1()
         sei()
         while true:
           discard
@@ -344,6 +368,59 @@ slide:
 
 slide:
   nbText: "## example: building a synth"
-  
+  slide: discard
+  slide:
+    nbImage("ay_schema.png")
+  slide:
+    nbText: "The clock signal gets used as the source to generate the final waveform"
+  slide:
+    nbText: "The signal gets scaled by a factor of 16, and then by an additional factor using a 12-bits integer"
+  slide:
+    nbText: "This means that with this clock frequency"
+    nbText: """$f_{clk} = 2MHz$"""
+    nbText: "We get this min and max frequencies as outputs:"
+    nbText: """$f_{high} = \frac{f_{clk}}{16} = \frac{2MHz}{16} =125 KHz$"""
+    nbText: """$f_{low} = \frac{f_{clk}}{16 \cdot 2^{12}} = \frac{2MHz}{16 \cdot 2^{12}}  \approx 30,5 Hz$"""
+    nbText: "Range: from a $B_{0}$ to a $B_{8}$"
 
+  slide:
+    nbText: "And in general, to play a specific $f_{target}$:"
+    nbText: """$f_{target} = \frac{f_{clk}}{16 \cdot m},  \text{m = 12 bit value divider}$"""
+    nbText: """$f_{target} = f_{0} \cdot a^n, a = \sqrt[12]{2}, f_{0} = f_{A_{4}} = 440 Hz  $"""
+    nbText: """$m = \frac{f_{clk}}{16 \cdot f_{target}} = \frac{f_{clk}}{16 \cdot 440Hz \cdot 2^{\frac{n}{12}}}$"""
+  slide: nbText: "I want to have a table of coefficients to play each note in the supported range." 
+  slide: nbText: "Let's use nim compile time functions for this"
+  slide: nbCodeSkip:
+    const 
+      freq_a4 = 440 # Hz
+      f_clk = 2_000_000.uint32 # Hz
+
+    template freq(n: int16): float32 =
+      freq_a4.float32 * (2.0.pow(1.0 / 12)).pow(n.float32)
+  
+    template mask(f: float32): uint16 =
+      (f_clk div (16 * f).uint32).uint16
+
+  slide: nbCodeSkip:
+    const 
+      octaves = 8
+      notes_in_oct = 12
+      tot_notes = notes_in_oct * octaves + 1
+
+    proc generate_magic_notes(): array[tot_notes, uint16] =
+      const
+        b4_idx = 2 # A4 = 0 => B4 = 2
+        b0_idx = (b4_idx - (4 * notes_in_oct)).int16
+        b8_idx = (b4_idx + (4 * notes_in_oct)).int16
+      var ctr = 0
+      for i in b0_idx..b8_idx:
+        result[ctr] = mask(freq(i))
+        inc ctr
+  slide: 
+    nbText: "I can then write"
+    nbCodeSkip:
+      const 
+        magicNotes* = generate_magic_notes()
+    nbText: "And have a compile-time generated array with the coefficients"
+    
 nbSave()
