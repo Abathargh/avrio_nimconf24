@@ -121,6 +121,7 @@ slide:
       listItem: nbText: "Requires nim >= 2.0.6"
       listItem: nbText: "Needs `avr-gcc` as its C backend compiler"
       listItem: nbText: "No other dependency"
+      listItem: nbText: "github.com/Abathargh/avr_io"
   slide:
     nbText: "Memory-mapped register definitions"
     animateCode(1, 3..6): 
@@ -291,6 +292,7 @@ slide:
       listItem: nbText: "can initialize C and nim projects"
       listItem: nbText: "avr_io is used as the base dependency for nim ones"
       listItem: nbText: "supports make and CMake for C ones"
+      listItem: nbText: "github.com/Abathargh/avrman"
   slide:
     nbText: "Initialize an Arduino Uno based project"
     nbCodeSkip: 
@@ -331,6 +333,7 @@ slide:
 slide:
   nbText: "## example: a simple blink application"
   slide: nbText: "Let's blink the Arduino Uno in-builtin LED at a frequency of ~1Hz"
+  slide: nbText: "Full working code: github.com/Abathargh/blink_nim_demo"
   slide: nbImage("blink_init.png")
   slide: nbText: "And now... a little bit of math"
   slide:
@@ -352,7 +355,7 @@ slide:
         timer1.setTimerFlag({TimCtlB16Flag.cs0, cs2, wgm2})
         timer1.setTimerFlag({Timsk16Flag.ociea})
       
-      proc timer_compa_isr() {.isr(Timer1CompAVect).} =
+      proc timerCompaIsr() {.isr(Timer1CompAVect).} =
         portB.togglePin(builtinLed)
 
   slide:
@@ -368,13 +371,12 @@ slide:
 
 slide:
   nbText: "## example: building a synth"
-  slide: discard
-  slide:
-    nbImage("ay_schema.png")
-  slide:
-    nbText: "The clock signal gets used as the source to generate the final waveform"
-  slide:
-    nbText: "The signal gets scaled by a factor of 16, and then by an additional factor using a 12-bits integer"
+  slide: nbText: "Let's implement a synth with an ay38910a PSGb "
+  slide: nbText: "Full working code: github.com/Abathargh/ay38910a_nim"
+  slide: nbImage("ay_chip.png")
+  slide: nbImage("ay_schema.png")
+  slide:nbText: "The clock signal gets used as the source to generate the final waveform"
+  slide:nbText: "The signal gets scaled by a factor of 16, and then by an additional factor using a 12-bits integer"
   slide:
     nbText: "This means that with this clock frequency"
     nbText: """$f_{clk} = 2MHz$"""
@@ -522,5 +524,6 @@ slide:
           for note in Note.low..Note.high:
             ay.playNote(CHAN_A, note.octave(oct))
             delayMs(20)
+  slide: nbVideo("sweep.mp4")
 
 nbSave()
