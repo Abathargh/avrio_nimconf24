@@ -388,7 +388,7 @@ slide:
     nbText: """$f_{target} = \frac{f_{clk}}{16 \cdot m},  \text{m = 12 bit value divider}$"""
     nbText: """$f_{target} = f_{0} \cdot a^n, a = \sqrt[12]{2}, f_{0} = f_{A_{4}} = 440 Hz  $"""
     nbText: """$m = \frac{f_{clk}}{16 \cdot f_{target}} = \frac{f_{clk}}{16 \cdot 440Hz \cdot 2^{\frac{n}{12}}}$"""
-  slide: nbText: "I want to have a table of coefficients to play each note in the supported range." 
+  slide: nbText: "I want to have a table of coefficients to play each note in the supported range" 
   slide: nbText: "Let's use nim compile time functions for this"
   slide: nbCodeSkip:
     const 
@@ -422,5 +422,105 @@ slide:
       const 
         magicNotes* = generate_magic_notes()
     nbText: "And have a compile-time generated array with the coefficients"
-    
+  slide: nbText: "Let's write a simple ay38910 object"
+  slide: animateCode(2, 5..6):
+    type
+      ay38910a {.byref.} = object
+        bc1Pin: uint8
+        bdirPin: uint8
+        ctlPort: Port
+        dataPort: Port
+  slide: nbText: "<avr/io.h> offers a couple of delay functions"
+  slide: nbText: """It's really easy to wrap one in nim thanks to its fantasticly 
+  easy to use and powerful FFI"""
+  slide: nbCode: 
+    proc delayUs(us: uint16) 
+      {.importc: "_delay_us", header: "util/delay.h".}
+  slide: nbText: "But we can also implement something ad-hoc with inline asm"
+  slide: nbCode:
+    proc delayUs*(us: cuint) {.inline.} =
+      asm """
+        "MOV ZH,%B0\n\t"
+        "MOV ZL,%A0\n\t"
+        "%=:\n\t"
+        "NOP\n\t"
+        ... 12 total 'NOP's
+        "SBIW Z,1\n\t"
+        "BRNE %=b\n\t"
+        :
+        : "r" (`us`)
+        : "r30", "r31"
+      """
+  slide: nbText: "Now we can write a couple of mode selecting functions for the PSG"
+  slide: animateCode(1, 2, 3, 4):
+    template writeMode(ay: ay38910a) = 
+      ay.ctlPort.clearPin(ay.bc1Pin)
+      delayUs(1)
+      ay.ctlPort.setPin(ay.bdirPin)
+      delayUs(1)
+  slide: nbText: "And finally we can write data to the PSG bus"
+  slide: nbCodeSkip:
+    proc writeData(ay: ay38910a; address, data: uint8) = 
+      ay.inactiveMode()
+      ay.dataPort.setPortValue(address)
+      ay.latchAddrMode()
+      ay.inactiveMode()
+
+      ay.writeMode()
+      ay.dataPort.setPortValue(data)
+      ay.inactiveMode()
+  slide: nbText: "This allows us to implement the PSG APIs to interact with the chip"
+  slide: nbCode:
+    type
+      channel* = enum
+        CHAN_A = 0
+        CHAN_B = 1
+        CHAN_C = 2
+
+      channelMode* {.size: sizeof(uint8).} = enum
+        CHA_TONE  = 0
+        CHB_TONE  = 1
+        CHC_TONE  = 2
+        CHA_NOISE = 3
+        CHB_NOISE = 4
+        CHC_NOISE = 5    
+      channelModes* = set[channelMode]
+  slide: nbCodeSkip:
+    proc channelOn(ay: sink ay38910a, m: channelModes) =
+      ay.writeData(MIXER_REG, bitops.bitnot(m.toMask()))
+
+    proc channelOff(ay: ay38910a, m: channelModes) =
+      ay.writeData(MIXER_REG, m.toMask())
+
+    proc setAmplitude(ay: ay38910a, chan: channel, amp: uint8, env: bool) =
+      let amplitude = (amp and 0x0f) or (if envelope: 0x10 else: 0x00)
+      ay.writeData(chanToAmplReg(chan), amplitude)
+  slide: nbCodeSkip:
+    proc playNote*(ay: ay38910a, chan: channel, note: uint16) =
+      let actualNote = note mod magicNotes.len()
+      let chanRegister = chanToReg(chan)
+      let magicNote = uint16(magicNotes[actualNote])
+      ay.writeData(chanRegister, uint8(magicNote) and 0xff)
+      ay.writeData(chanRegister + 1, uint8(magicNote shr 8) and 0x0f)
+  slide: nbCodeSkip:
+    proc genClock(clockPort: Port, clockPin: uint8) =
+      clockPort.asOutputPin(clockPin)
+      OCR2A[] = 3
+      timer2.setTimerFlag({TimCtlAFlag.wgm1, coma0})
+      timer2.setTimerFlag({TimCtlBFlag.cs0})
+  slide: nbText: "Let's just program the synth to do a note sweep"
+  slide: nbCodeSkip:
+    proc loop =
+      genClock(portB, 4)
+      const 
+        ay = ay38910a(bc1Pin: 4, bdirPin: 5, ctlPort: portH, dataPort: portA)
+      ay.init()
+      ay.channelOn({CHA_TONE})
+      ay.setAmplitude(CHAN_A, 15, false)
+      while true:
+        for oct in 0..octaves:
+          for note in Note.low..Note.high:
+            ay.playNote(CHAN_A, note.octave(oct))
+            delayMs(20)
+
 nbSave()
