@@ -9,6 +9,9 @@ template avrio_support*: untyped {.dirty.} =
         listItem: nbText: "No other dependency"
         listItem: nbText: "github.com/Abathargh/avr_io"
     slide:
+      nbText: "Many other, complete, functional examples here:"
+      nbText: "github.com/Abathargh/avr_io/tree/master/examples"
+    slide:
       nbText: "Memory-mapped register definitions"
       animateCode(1, 3..6): 
         type MappedIoRegister*[T: uint8|uint16] = distinct uint16
@@ -94,7 +97,7 @@ template avrio_support*: untyped {.dirty.} =
         let 
           header {.section(".metadata").} = fill(headerSize, 0'u8)
     slide:
-      nbImage("section.png")
+      nbImage("assets/section.png")
     slide:
       nbText: "Perpiheral support (partial, experimental)"
       unorderedList:

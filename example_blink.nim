@@ -5,7 +5,7 @@ template example_blink*: untyped =
     nbText: "## example: a simple blink application"
     slide: nbText: "Let's blink the Arduino Uno in-builtin LED at a frequency of ~1Hz"
     slide: nbText: "Full working code: github.com/Abathargh/blink_nim_demo"
-    slide: nbImage("blink_init.png")
+    slide: nbImage("assets/blink_init.png")
     slide: nbText: "And now... a little bit of math"
     slide:
       nbText: """$f_{MCU} = 16 MHz$"""

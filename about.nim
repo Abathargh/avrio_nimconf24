@@ -7,5 +7,6 @@ template about*: untyped =
       listItem: nbText: "Gianmarco, from Italy  "
       listItem: nbText: "Embedded Software Engineer"
       listItem: nbText: "AVR enthusiast, like to hack around on MCUs"
+      listItem: nbText: "Writing on antima.it"
       listItem: nbText: "g.marcello@antima.it"
       listItem: nbText: "github.com/Abathargh"
